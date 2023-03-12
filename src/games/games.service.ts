@@ -1,17 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Game, GameStatus, UserGame } from '@prisma/client';
+import { GameWithUsers } from './gamesExtraInterfaces';
 
 @Injectable()
 export class GamesService {
   remove: any;
   constructor(private prisma: PrismaService) {}
 
-  async getAllGames(): Promise<Game[] | void> {
-    const games = await this.prisma.game.findMany().catch((err) => {
-    throw new BadRequestException(err);
-	});
-	return games;
+  async getAllGames(): Promise<GameWithUsers []> {
+    const games = await this.prisma.game.findMany()
+    .catch((err) => {
+      throw new BadRequestException(err);
+	  });
+
+    const userGames = await this.prisma.userGame.findMany(
+      { where: { gameId: { in: games.map((game) => game.id) } } })
+    .catch((err) => {
+      throw new BadRequestException(err);
+    });
+    
+    const gamesWithUsers = games.map((game) => {
+      return {
+        ...game,
+        userGames: userGames.filter((userGame) => userGame.gameId == game.id),
+      };
+    });
+
+    return gamesWithUsers;
   }
 
   async getGameById(gameId: string): Promise<Game> {
@@ -31,7 +47,7 @@ export class GamesService {
   }
 
 
-  async getGameByStatus(status: string): Promise<Game[] | void> {
+  async getGameByStatus(status: string): Promise<GameWithUsers[]> {
     if (status != GameStatus.WAITING && status != GameStatus.INPROGRESS && status != GameStatus.FINISHED)
       throw new BadRequestException("Invalid status");
     const games = await this.prisma.game.findMany(
@@ -39,8 +55,20 @@ export class GamesService {
     .catch((err) => {
       throw new BadRequestException(err);
     });
-    return games;
+    const userGames = await this.prisma.userGame.findMany(
+      { where: { gameId: { in: games.map((game) => game.id) } } })
+    .catch((err) => {
+      throw new BadRequestException(err);
+    });
+    const gamesWithUsers = games.map((game) => {
+      return {
+        ...game,
+        userGames: userGames.filter((userGame) => userGame.gameId == game.id),
+      };
+    });
+    return gamesWithUsers;
   }
+
   async create( userId: string): Promise<Game | void> {
     let game = await this.prisma.game.create({
       data: {
