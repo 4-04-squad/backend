@@ -19,11 +19,18 @@ export class GamesService {
     .catch((err) => {
       throw new BadRequestException(err);
     });
+
+    const users = await this.prisma.user.findMany(
+      { where: { id: { in: userGames.map((userGame) => userGame.userId) } } })
+    .catch((err) => {
+      throw new BadRequestException(err);
+    });
     
     const gamesWithUsers = games.map((game) => {
       return {
         ...game,
         userGames: userGames.filter((userGame) => userGame.gameId == game.id),
+        users: users.filter((user) => userGames.some((userGame) => userGame.userId == user.id && userGame.gameId == game.id)),
       };
     });
 
@@ -60,10 +67,16 @@ export class GamesService {
     .catch((err) => {
       throw new BadRequestException(err);
     });
+    const users = await this.prisma.user.findMany(
+      { where: { id: { in: userGames.map((userGame) => userGame.userId) } } })
+    .catch((err) => {
+      throw new BadRequestException(err);
+    });
     const gamesWithUsers = games.map((game) => {
       return {
         ...game,
         userGames: userGames.filter((userGame) => userGame.gameId == game.id),
+        users: users.filter((user) => userGames.some((userGame) => userGame.userId == user.id && userGame.gameId == game.id)),
       };
     });
     return gamesWithUsers;
