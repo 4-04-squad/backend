@@ -15,8 +15,8 @@ export class AuthController {
   constructor(private authService: AuthService, private prisma: PrismaService, private usersService: UsersService) {}
 
   @Get('login')
-  @UseGuards(AuthGuard('42'))
-  async loginWithFortyTwo(@Res() res: Response) {}
+  @ApiResponse({ status: 302, description: 'Redirect to 42 API'})
+  async loginWithFortyTwo(@Req() req: RequestWithUser, @Res() res: Response) {};
 
   @Get('login/callback')
   @ApiResponse({ status: 500, description: 'Error authenticating with 42 API'})
